@@ -11,6 +11,9 @@ UPDATE_HOSTS='/etc/hosts'
 # Can change local port of the wstunnel, don't forget to change Peer.Endpoint
 # LOCAL_PORT=${REMOTE_PORT}
 
+# Specify a HTTP proxy
+# HTTP_PROXY='192.168.1.1:3128'
+
 # If using dnsmasq can supply other file than /etc/hosts
 # UPDATE_HOSTS='/usr/local/etc/dnsmasq.d/hosts/tunnels'
 

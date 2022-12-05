@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #
 # Original script downloaded from: https://github.com/Kirill888/notes/blob/wg-tunnel-update/wireguard/scripts/wstunnel.sh
@@ -86,17 +86,27 @@ launch_wstunnel () {
     local prefix=${WS_PREFIX:-"wstunnel"}
     local user=${1:-"nobody"}
     local timeout=${TIMEOUT:-"-1"}
+    local proxy=${HTTP_PROXY}
     local cmd
+    local parameters
+
+    parameters=" --quiet \
+    --udpTimeoutSec=${timeout} \
+    --udp \
+    -L 127.0.0.1:${lport}:127.0.0.1:${rport} \
+    wss://${host}:${wssport} "
+    if [[ ! -z $prefix ]]; then
+        parameters="${parameters} --upgradePathPrefix=${prefix} "
+    fi
+    if [[ ! -z $proxy ]]; then
+        parameters="${parameters} --httpProxy=${proxy} "
+    fi
 
     cmd=$(command -v wstunnel)
     cmd="sudo -n -u ${user} -- $cmd"
 
     $cmd >/dev/null 2>&1 </dev/null \
-      --quiet \
-      --udpTimeoutSec "${timeout}" \
-      --upgradePathPrefix "${prefix}" \
-      --udp  -L "127.0.0.1:${lport}:127.0.0.1:${rport}" \
-      "wss://${host}:${wssport}" & disown
+      ${parameters} & disown
     echo "$!"
 }
 
@@ -116,11 +126,15 @@ pre_up () {
         exit 1
     fi
 
-    remote_ip=$(dig +short "${remote}")
-
-    if [[ -z "${remote_ip}" ]]; then
-        echo "[#] Can't resolve ${remote}"
-        exit 1
+    if [[ $remote =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        echo "[#] WARNING: You should specifie a domain name instead of a direct IP address"
+        remote_ip=$remote
+    else
+        remote_ip=$(dig +short "${remote}")
+        if [[ -z "${remote_ip}" ]]; then
+            echo "[#] Can't resolve ${remote}"
+            exit 1
+        fi
     fi
 
     if [[ -f "${hosts_file}" ]]; then
